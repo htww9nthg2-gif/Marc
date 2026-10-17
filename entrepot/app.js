@@ -177,7 +177,7 @@ function vueOccupation() {
         <div><strong>${stock.length}</strong><span>lots en stock</span></div>
       </div>
     </section>
-    ${cartes}`;
+    <div class="grille-entrepots">${cartes}</div>`;
 }
 
 // =====================================================================
@@ -205,7 +205,7 @@ function vueReception() {
   const b = brouillon;
   const optionsClients = clients.map(c => `<option value="${c.id}" ${c.id === b.client_id ? 'selected' : ''}>${e(c.nom)}</option>`).join('');
   const apercus = b.photos.map((p, i) => `<figure><img class="vignette" src="${p.apercu}" alt=""><button class="lien danger-texte" data-action="retirer-photo" data-index="${i}">Retirer</button></figure>`).join('');
-  return `
+  return `<div class="grille"><div>
     <section class="bloc">
       <h2>Photos du lot</h2>
       <p class="discret">Photographie les morceaux pour qu'on puisse les compter.</p>
@@ -220,7 +220,7 @@ function vueReception() {
       ${b.client_id === 'nouveau' ? `<label>Nom du nouveau client<input data-champ="nouveauClient" value="${e(b.nouveauClient)}"></label>` : ''}
       <label>Description<input data-champ="description" value="${e(b.description)}" placeholder="Ex. : poutres d'acier, caisses de pièces…"></label>
       <label>Nombre de morceaux<input type="number" inputmode="numeric" min="1" step="1" data-champ="morceaux" value="${e(b.morceaux)}"></label>
-    </section>
+    </section></div>
     <section class="bloc">
       <h2>Superficie et emplacement</h2>
       <div class="deux">
@@ -234,7 +234,7 @@ function vueReception() {
       <label>Date d'entrée<input type="date" data-champ="date_entree" value="${e(b.date_entree)}"></label>
       <label>Remarque<textarea rows="2" data-champ="note">${e(b.note)}</textarea></label>
     </section>
-    <button class="principal" data-action="enregistrer-reception">Enregistrer la réception</button>`;
+    <button class="principal" data-action="enregistrer-reception">Enregistrer la réception</button></div>`;
 }
 
 async function enregistrerReception() {
@@ -300,8 +300,10 @@ function vueStock() {
       <button class="${etat.voirSortis ? '' : 'actif'}" data-action="voir-sortis" data-valeur="non">En stock (${stock.length})</button>
       <button class="${etat.voirSortis ? 'actif' : ''}" data-action="voir-sortis" data-valeur="oui">Sortis récemment</button>
     </div>
-    <input type="search" id="recherche" placeholder="Rechercher : client, n° de lot, description…" value="${e(etat.texte)}">
-    <select id="filtre-zone"><option value="">Toutes les zones</option>${optionsZones(etat.zone, { libre: false })}</select>
+    <div class="filtres">
+      <input type="search" id="recherche" placeholder="Rechercher : client, n° de lot, description…" value="${e(etat.texte)}">
+      <select id="filtre-zone"><option value="">Toutes les zones</option>${optionsZones(etat.zone, { libre: false })}</select>
+    </div>
     <div id="liste-lots">${listeLots()}</div>`;
 }
 
@@ -340,7 +342,7 @@ async function vueLot() {
       <button class="secondaire" data-action="modifier-lot">Enregistrer les modifications</button>
     </section>`;
 
-  return `
+  return `<div class="grille"><div>
     <section class="bloc">
       <div class="titre-bloc"><h2>${e(clientDe(lot.client_id)?.nom || '')}</h2>
         <span class="statut ${lot.date_sortie ? 'sorti' : ''}">${lot.date_sortie ? `Sorti le ${dateCourte(lot.date_sortie)}` : 'En stock'}</span></div>
@@ -356,8 +358,8 @@ async function vueLot() {
       ${lot.note_sortie ? `<p class="discret">📝 Sortie : ${e(lot.note_sortie)}</p>` : ''}
       <div class="galerie">${lot.photos_entree.map(imagePhoto).join('')}${lot.photos_sortie.map(imagePhoto).join('')}</div>
     </section>
-    ${formulaireSortie}
-    ${etapes}`;
+    ${etapes}</div>
+    <div>${formulaireSortie}</div></div>`;
 }
 
 async function confirmerSortie() {
