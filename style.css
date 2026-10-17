@@ -1,0 +1,230 @@
+/* Visite de chantier : pensé pour l'iPhone, utilisable avec des gants… ou presque */
+:root {
+  --bleu: #1e3a5f;
+  --bleu-clair: #e8eef6;
+  --orange: #e8710a;
+  --texte: #1c2430;
+  --discret: #64748b;
+  --fond: #f3f5f8;
+  --carte: #ffffff;
+  --bordure: #d5dce5;
+  --rouge: #c0392b;
+  --rayon: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--fond);
+  color: var(--texte);
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  background: var(--bleu);
+  color: white;
+}
+.entete h1 { margin: 0; font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.retour { background: none; border: 0; color: white; font-size: 17px; padding: 4px 8px 4px 0; }
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 32px);
+}
+
+h2 { font-size: 17px; margin: 0 0 12px; color: var(--bleu); }
+.titre-section { margin: 24px 4px 12px; }
+
+button, .bouton-fichier { font: inherit; cursor: pointer; }
+
+.principal, .secondaire, .danger {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--rayon);
+  border: 0;
+  font-weight: 600;
+  text-align: center;
+  margin: 12px 0;
+}
+.principal { background: var(--orange); color: white; }
+.secondaire { background: var(--bleu-clair); color: var(--bleu); }
+.danger { background: none; color: var(--rouge); border: 1px solid var(--rouge); margin-top: 32px; }
+.lien { background: none; border: 0; color: var(--bleu); text-decoration: underline; padding: 6px; }
+.danger-texte { color: var(--rouge); }
+
+.bloc {
+  background: var(--carte);
+  border-radius: var(--rayon);
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+.titre-bloc { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.titre-bloc label { flex: 1; margin: 0; }
+.titre-bloc input { font-weight: 600; }
+
+label { display: block; font-size: 14px; color: var(--discret); margin: 0 0 12px; }
+input[type="file"] { display: none; }
+input, textarea, select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 16px; /* évite le zoom automatique de Safari */
+  color: var(--texte);
+  background: white;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+textarea { resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--orange); border-color: transparent; }
+
+.case { display: flex; align-items: flex-start; gap: 10px; color: var(--texte); font-size: 15px; }
+.case input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--orange); }
+.sous-liste { margin: 4px 0 0 16px; padding-left: 12px; border-left: 3px solid var(--bleu-clair); }
+
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 8px; }
+@media (max-width: 380px) { .deux { grid-template-columns: 1fr; } }
+
+.discret { color: var(--discret); font-size: 14px; margin: 4px 0; }
+.centre { text-align: center; }
+.vide { color: var(--discret); text-align: center; padding: 24px 8px; }
+.info { background: var(--bleu-clair); color: var(--bleu); padding: 12px; border-radius: var(--rayon); font-size: 15px; }
+.alerte { color: var(--orange); font-weight: 600; }
+
+/* Accueil */
+.cartes { list-style: none; padding: 0; margin: 0; }
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: var(--carte);
+  border: 0;
+  border-left: 5px solid var(--orange);
+  border-radius: var(--rayon);
+  padding: 14px 16px;
+  margin: 10px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  color: var(--texte);
+}
+.carte-haut, .carte-bas { display: flex; justify-content: space-between; gap: 8px; }
+.carte-bas { font-size: 14px; color: var(--discret); margin-top: 4px; }
+.carte-bas strong { color: var(--texte); font-size: 16px; }
+.statut { font-size: 12px; background: var(--bleu-clair); color: var(--bleu); padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+
+/* Onglets du dossier */
+.onglets {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 50px);
+  z-index: 5;
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  margin: -16px -16px 0;
+  padding: 10px 16px;
+  background: var(--fond);
+  scrollbar-width: none;
+}
+.onglets::-webkit-scrollbar { display: none; }
+.onglets button {
+  flex: none;
+  border: 1px solid var(--bordure);
+  background: white;
+  color: var(--texte);
+  border-radius: 99px;
+  padding: 8px 14px;
+  font-size: 15px;
+}
+.onglets button.actif { background: var(--bleu); border-color: var(--bleu); color: white; }
+
+/* Photos */
+.photo img { width: 100%; border-radius: 8px; margin-bottom: 12px; display: block; }
+
+/* Estimation */
+.ligne .trois label { margin-bottom: 4px; font-size: 13px; }
+.montant-ligne { margin: 8px 0 0; font-size: 14px; color: var(--discret); text-align: right; }
+.montant-ligne strong { color: var(--texte); font-size: 16px; }
+.totaux p { display: flex; justify-content: space-between; margin: 6px 0; }
+.totaux .total { font-size: 20px; font-weight: 700; border-top: 2px solid var(--bleu); padding-top: 8px; color: var(--bleu); }
+#choix-ressource { margin-bottom: 0; }
+
+/* Procédures et conditions */
+.procedure, .condition { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--fond); }
+.procedure .case { flex: 1; margin: 0; }
+.procedure input[type="text"], .condition textarea { flex: 1; margin: 0; }
+
+/* Documents */
+.document-bouton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: var(--carte);
+  border: 2px solid var(--bleu-clair);
+  border-radius: var(--rayon);
+  padding: 18px 16px;
+  margin: 12px 0;
+  color: var(--texte);
+}
+.document-bouton span { color: var(--discret); font-size: 14px; }
+
+.document {
+  background: white;
+  padding: 20px;
+  border-radius: var(--rayon);
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+.document p { margin: 2px 0; }
+.document h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--bleu); border-bottom: 2px solid var(--bleu); padding-bottom: 4px; margin: 20px 0 8px; }
+.doc-entete { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--orange); padding-bottom: 12px; }
+.doc-entreprise { font-size: 20px; font-weight: 800; color: var(--bleu); }
+.doc-numero { text-align: right; }
+.doc-type { font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--orange); }
+.doc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.doc-texte { white-space: pre-wrap; }
+.document table { width: 100%; border-collapse: collapse; }
+.document th { text-align: left; background: var(--bleu-clair); color: var(--bleu); padding: 6px; font-size: 12px; }
+.document td { padding: 6px; border-bottom: 1px solid var(--bordure); vertical-align: top; }
+.doc-prix td:nth-child(n+2), .doc-prix th:nth-child(n+2) { text-align: right; white-space: nowrap; }
+.document small { color: var(--discret); }
+.doc-totaux { margin: 10px 0 0 auto; max-width: 280px; }
+.doc-totaux p { display: flex; justify-content: space-between; }
+.doc-totaux .total { font-size: 16px; font-weight: 800; border-top: 2px solid var(--bleu); padding-top: 4px; margin-top: 4px; color: var(--bleu); }
+.doc-liste { padding-left: 18px; margin: 0; }
+.doc-liste li { margin: 3px 0; }
+.doc-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.doc-photos figure { margin: 0; break-inside: avoid; }
+.doc-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
+.doc-photos figcaption { font-size: 12px; margin-top: 4px; }
+.doc-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; break-inside: avoid; }
+.ligne-signature { border-bottom: 1px solid var(--texte); min-height: 36px; padding-top: 12px; }
+
+/* Impression et PDF : seul le document est imprimé */
+@media print {
+  @page { margin: 14mm; }
+  body { background: white; }
+  .entete, .sans-impression { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .document { box-shadow: none; padding: 0; border-radius: 0; }
+  .document h3 { break-after: avoid; }
+  .document tr { break-inside: avoid; }
+}
