@@ -491,7 +491,11 @@ async function emettreFacture() {
 
 function exporterCsv() {
   const colonnes = ['Client', 'Facture', 'Lignes', 'Superficie (pi²)', 'Sous-total', 'TPS', 'TVQ', 'Total'];
-  const cellule = v => `"${String(v).replace(/"/g, '""')}"`;
+  // Un texte qui commence par = + - @ serait exécuté comme une formule par le tableur : on le neutralise
+  const cellule = v => {
+    const texte = typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v);
+    return `"${texte.replace(/"/g, '""')}"`;
+  };
   const montant = n => Number(n).toFixed(2).replace('.', ',');
   const lignes = facturationCourante.factures.map(f => {
     const emise = factureEmise(f.client.id);

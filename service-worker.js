@@ -1,6 +1,6 @@
 // Garde les fichiers de l'application en cache pour qu'elle s'ouvre même sans réseau.
 // Changer ce numéro à chaque nouvelle version force la mise à jour du cache.
-const CACHE = 'visite-chantier-v2';
+const CACHE = 'visite-chantier-v3';
 
 const FICHIERS = [
   './',

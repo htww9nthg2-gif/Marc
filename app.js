@@ -320,7 +320,7 @@ function ongletMachines(d) {
 function ongletPhotos(d) {
   const cartes = d.photos.map((p, i) => `
     <section class="bloc photo">
-      <img src="${p.image}" alt="Photo ${i + 1}">
+      <img src="${e(p.image)}" alt="Photo ${i + 1}">
       ${liste('Enjeu', `photos.${i}.categorie`, p.categorie, enListe(CATEGORIES_ENJEUX))}
       ${zoneTexte('Ce qu\'il faut savoir', `photos.${i}.note`, p.note, { indice: 'Ex. : porte de 3 m de large, prévoir de retirer le cadre' })}
       <button class="lien danger-texte" data-action="supprimer-photo" data-index="${i}">Supprimer la photo</button>
@@ -479,7 +479,7 @@ function grillePhotos(d) {
   return `
     <h3>Points d'attention relevés à la visite</h3>
     <div class="doc-photos">
-      ${d.photos.map((p, i) => `<figure><img src="${p.image}" alt="">
+      ${d.photos.map((p, i) => `<figure><img src="${e(p.image)}" alt="">
         <figcaption><strong>${i + 1}. ${e(p.categorie)}</strong>${p.note ? ` — ${e(p.note)}` : ''}</figcaption></figure>`).join('')}
     </div>`;
 }
@@ -726,7 +726,20 @@ async function restaurer(fichier) {
   if (!fichier) return;
   try {
     const donnees = JSON.parse(await fichier.text());
-    if (donnees.application !== 'visite-chantier') throw new Error();
+    if (donnees.application !== 'visite-chantier' || !Array.isArray(donnees.dossiers)) throw new Error();
+    // Une sauvegarde est un fichier qui peut venir d'ailleurs : les photos doivent être de vraies images
+    const imageValide = image => typeof image === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image);
+    for (const d of donnees.dossiers) {
+      if (!d || typeof d !== 'object' || !Array.isArray(d.photos) || !d.photos.every(p => imageValide(p?.image))) throw new Error();
+    }
+    // Les identifiants et numéros sont repris tels quels dans la page : ils ne doivent contenir aucun balisage
+    const identifiantsSurs = valeur => {
+      if (Array.isArray(valeur)) return valeur.every(identifiantsSurs);
+      if (!valeur || typeof valeur !== 'object') return true;
+      return Object.entries(valeur).every(([cle, v]) =>
+        (['id', 'numero', 'ressourceId'].includes(cle) ? v == null || /^[\w-]{1,64}$/.test(String(v)) : true) && identifiantsSurs(v));
+    };
+    if (!identifiantsSurs(donnees.dossiers) || !identifiantsSurs(donnees.reglages)) throw new Error();
     if (!confirm(`Restaurer ${donnees.dossiers.length} dossier(s) et les réglages ? Les dossiers du même numéro seront remplacés.`)) return;
     reglages = { ...REGLAGES_DEFAUT, ...donnees.reglages };
     await BD.ecrire('reglages', reglages);
