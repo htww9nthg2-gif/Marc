@@ -16,13 +16,14 @@ language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.profils where id = auth.uid() and role = 'admin');
 $$;
 
--- Chaque nouveau compte reçoit un profil ; le tout premier compte devient administrateur
+-- Chaque nouveau compte reçoit un profil d'employé.
+-- Aucun compte ne devient administrateur automatiquement : l'administrateur est désigné
+-- à la main (voir README), pour qu'une inscription non prévue ne puisse jamais donner tous les droits.
 create function public.creer_profil() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profils (id, courriel, nom, role)
-  values (new.id, new.email, split_part(new.email, '@', 1),
-          case when exists (select 1 from public.profils where role = 'admin') then 'employe' else 'admin' end);
+  values (new.id, new.email, split_part(new.email, '@', 1), 'employe');
   return new;
 end $$;
 
@@ -102,14 +103,49 @@ end $$;
 create trigger reference_lot before insert on public.lots
   for each row execute function public.reference_lot();
 
+-- Protection des lots contre les écritures directes depuis l'application.
+-- « current_user = 'authenticated' » : la requête vient d'un compte connecté, en direct.
+-- Les fonctions sortir_lot (security definer) passent outre, car elles font leurs propres contrôles.
+--   - à la réception : l'auteur est toujours le compte connecté, et un lot neuf ne peut pas
+--     être déclaré déjà sorti ni rattaché à l'historique d'un autre lot ;
+--   - ensuite : seuls la zone, la description et la remarque se modifient ; superficie, dates,
+--     client, morceaux et traçabilité (base de la facturation) ne changent que par sortir_lot.
+create function public.proteger_lot() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if current_user <> 'authenticated' then return new; end if;
+  if tg_op = 'INSERT' then
+    new.recu_par := auth.uid();
+    new.reference := null;
+    new.lot_precedent := null;
+    new.date_sortie := null;
+    new.morceaux_sortis := null;
+    new.superficie_liberee := null;
+    new.photos_sortie := '{}';
+    new.note_sortie := '';
+    new.sorti_par := null;
+    new.cree_le := now();
+    return new;
+  end if;
+  if (to_jsonb(new) - array['zone_id', 'description', 'note'])
+     is distinct from (to_jsonb(old) - array['zone_id', 'description', 'note']) then
+    raise exception 'Seules la zone, la description et la remarque d''un lot peuvent être modifiées.';
+  end if;
+  return new;
+end $$;
+-- « a_ » : passe avant reference_lot (les déclencheurs s'exécutent par ordre alphabétique)
+create trigger a_proteger_lot before insert or update on public.lots
+  for each row execute function public.proteger_lot();
+
 -- Sortie complète ou partielle, en une seule opération
 create function public.sortir_lot(p_lot uuid, p_date date, p_morceaux int, p_superficie numeric,
                                   p_photos text[] default '{}', p_note text default '')
-returns uuid language plpgsql set search_path = public as $$
+returns uuid language plpgsql security definer set search_path = public as $$
 declare
   l public.lots;
   reste uuid;
 begin
+  if auth.uid() is null then raise exception 'Connexion requise'; end if;
   select * into l from public.lots where id = p_lot and date_sortie is null for update;
   if not found then raise exception 'Lot introuvable ou déjà sorti'; end if;
   if p_date < l.date_entree then raise exception 'La date de sortie précède la date d''entrée'; end if;
@@ -205,7 +241,15 @@ create policy suppression on public.lots for delete to authenticated using (publ
 create policy admin on public.factures for all to authenticated using (public.est_admin()) with check (public.est_admin());
 
 -- ---------- Photos (espace privé, accessible aux comptes connectés) ----------
-insert into storage.buckets (id, name, public) values ('photos', 'photos', false);
+-- Photos JPEG uniquement (l'application les compresse), 10 Mo au plus
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('photos', 'photos', false, 10485760, array['image/jpeg']);
 create policy "photos lecture" on storage.objects for select to authenticated using (bucket_id = 'photos');
 create policy "photos ajout" on storage.objects for insert to authenticated with check (bucket_id = 'photos');
 create policy "photos suppression" on storage.objects for delete to authenticated using (bucket_id = 'photos' and public.est_admin());
+
+-- ---------- Fonctions : appelables seulement par les comptes connectés ----------
+revoke execute on function public.sortir_lot(uuid, date, int, numeric, text[], text) from public, anon;
+revoke execute on function public.emettre_facture(uuid, date, jsonb, numeric, numeric, numeric, numeric) from public, anon;
+grant execute on function public.sortir_lot(uuid, date, int, numeric, text[], text) to authenticated;
+grant execute on function public.emettre_facture(uuid, date, jsonb, numeric, numeric, numeric, numeric) to authenticated;
