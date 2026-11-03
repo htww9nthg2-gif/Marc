@@ -145,9 +145,13 @@ const classeTaux = t => t >= 0.9 ? 'plein' : t >= 0.7 ? 'attention' : 'ok';
 const barreTaux = t => `<div class="jauge"><div class="${classeTaux(t)}" style="width:${Math.min(100, t * 100)}%"></div></div>`;
 
 // Plan de l'entrepôt (plan.js), si ses zones correspondent à un plan connu
+// Avec un seul entrepôt, le plan s'affiche toujours : les zones mal nommées restent en gris
 function planEntrepot(r) {
-  const plan = Plan.pourEntrepot(r.zones.map(z => z.zone));
-  return plan ? Plan.dessiner(plan, r.zones, { e, nombre }) : '';
+  const relie = Plan.pourEntrepot(r.zones.map(z => z.zone));
+  const plan = relie || (entrepots.length <= 1 ? PLANS[0] : null);
+  if (!plan) return '';
+  const aide = relie ? '' : `<p class="info">Pour colorer le plan, nomme les zones comme sur le plan : ${plan.zones.map(z => `« Zone ${e(z.nom)} »`).join(', ')}.</p>`;
+  return aide + Plan.dessiner(plan, r.zones, { e, nombre });
 }
 
 function vueOccupation() {
@@ -156,7 +160,8 @@ function vueOccupation() {
     return estAdmin()
       ? `<section class="bloc accueil"><h2>Bienvenue !</h2>
           <p>Pour commencer, saisis ton prix au pied carré, puis crée tes entrepôts et leurs zones avec leur superficie.</p>
-          <button class="principal" data-action="aller" data-vue="reglages">Configurer mes entrepôts</button></section>`
+          <button class="principal" data-action="aller" data-vue="reglages">Configurer mes entrepôts</button></section>
+         <section class="bloc">${planEntrepot({ zones: [] })}</section>`
       : '<p class="vide">Les entrepôts ne sont pas encore configurés. L\'administrateur doit d\'abord créer les zones.</p>';
   }
   const occ = Calculs.occupation({ entrepots, zones, lots: stock });
