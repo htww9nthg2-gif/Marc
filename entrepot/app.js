@@ -1,5 +1,8 @@
 'use strict';
 
+// Affichée dans « Mon compte » : permet de vérifier que chaque appareil a la dernière version
+const VERSION = '9 (plan de l\'entrepôt)';
+
 // =====================================================================
 // Petits outils
 // =====================================================================
@@ -636,6 +639,7 @@ function blocCompte() {
     <section class="bloc" data-bloc>
       <h2>Mon compte</h2>
       <p>${e(profil.courriel)} · ${profil.role === 'admin' ? 'Administrateur' : 'Employé'}</p>
+      <p class="discret">Version de l'application : ${e(VERSION)}</p>
       <label>Nouveau mot de passe<input name="motDePasse" type="password" autocomplete="new-password" minlength="8"></label>
       <button class="secondaire" data-action="changer-mot-de-passe">Changer le mot de passe</button>
       <button class="danger" data-action="deconnexion">Se déconnecter</button>

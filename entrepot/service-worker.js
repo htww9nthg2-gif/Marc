@@ -1,7 +1,7 @@
 // Garde les fichiers de l'application en cache pour qu'elle s'ouvre vite.
 // Les données, elles, viennent toujours du serveur (Supabase).
 // Changer ce numéro à chaque nouvelle version force la mise à jour du cache.
-const CACHE = 'entreposage-v8';
+const CACHE = 'entreposage-v9';
 
 const FICHIERS = [
   './',
@@ -38,7 +38,8 @@ self.addEventListener('fetch', evenement => {
   const requete = evenement.request;
   if (requete.method !== 'GET' || new URL(requete.url).origin !== location.origin) return;
   evenement.respondWith(
-    fetch(requete)
+    // « no-cache » : le navigateur revérifie auprès du serveur au lieu de resservir une vieille copie
+    fetch(requete.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then(reponse => {
         const copie = reponse.clone();
         caches.open(CACHE).then(cache => cache.put(requete, copie));
