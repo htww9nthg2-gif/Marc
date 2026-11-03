@@ -43,4 +43,6 @@ Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour s
 
 Un projet déjà installé avant le 18 octobre 2026 doit exécuter une fois `migrations/2026-10-18-securite.sql` dans **SQL Editor**. Elle impose l'auteur réel de chaque réception, limite les modifications d'un lot à la zone, la description et la remarque, retire l'administrateur automatique et limite les photos au JPEG de 10 Mo. La dernière ligne affiche les administrateurs : vérifier que ce sont les bonnes personnes.
 
+Un projet installé avant le 3 novembre 2026 doit aussi exécuter une fois `migrations/2026-11-03-droits.sql` : les projets Supabase récents n'accordent plus automatiquement aux comptes connectés l'accès aux tables, ce qui provoque « permission denied » dans l'application.
+
 À vérifier aussi dans Supabase : *Allow new users to sign up* doit rester **désactivé**.

@@ -253,3 +253,11 @@ revoke execute on function public.sortir_lot(uuid, date, int, numeric, text[], t
 revoke execute on function public.emettre_facture(uuid, date, jsonb, numeric, numeric, numeric, numeric) from public, anon;
 grant execute on function public.sortir_lot(uuid, date, int, numeric, text[], text) to authenticated;
 grant execute on function public.emettre_facture(uuid, date, jsonb, numeric, numeric, numeric, numeric) to authenticated;
+
+-- ---------- Droits des comptes connectés sur les tables ----------
+-- Les projets Supabase récents ne les accordent plus automatiquement ; les règles RLS ci-dessus
+-- décident ensuite de ce que chacun voit et modifie.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+grant execute on function public.est_admin() to authenticated;
