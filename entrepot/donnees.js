@@ -54,6 +54,14 @@ const Donnees = (() => {
     lotsSortis: async () => verifier(await sb.from('lots').select('*').not('date_sortie', 'is', null).order('date_sortie', { ascending: false }).limit(200)),
     lotsPeriode: async (debut, fin) => verifier(await sb.from('lots').select('*').lte('date_entree', fin).or(`date_sortie.is.null,date_sortie.gte.${debut}`)),
     historique: async reference => verifier(await sb.from('lots').select('*').eq('reference', reference).order('numero')),
+    // Journal des mouvements (inscrit par la base, en lecture seule)
+    journalLot: async reference => verifier(await sb.from('journal').select('*').eq('reference', reference).order('le')),
+    async journal({ depuis, jusqua, utilisateur, action }) {
+      let requete = sb.from('journal').select('*').gte('le', depuis).lt('le', jusqua).order('le', { ascending: false }).limit(1000);
+      if (utilisateur) requete = requete.eq('utilisateur', utilisateur);
+      if (action) requete = requete.eq('action', action);
+      return verifier(await requete);
+    },
     recevoirLot: async lot => verifier(await sb.from('lots').insert(lot).select().single()),
     sortirLot: async ({ lot, date, morceaux, superficie, photos, note }) =>
       verifier(await sb.rpc('sortir_lot', { p_lot: lot, p_date: date, p_morceaux: morceaux, p_superficie: superficie, p_photos: photos, p_note: note })),

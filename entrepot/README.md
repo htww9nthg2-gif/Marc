@@ -5,6 +5,7 @@ Application web (iPhone et ordinateur) pour gérer un entrepôt facturé au pied
 - **Réception** : photos du lot, nombre de morceaux, superficie (pi²) et zone de rangement.
 - **Sortie** complète ou partielle (le reste garde le même numéro de lot).
 - **Occupation** de chaque zone et de chaque entrepôt, en temps réel, avec le plan de l'entrepôt : zones en vert (place disponible) ou en rouge (pleines à 90 % et plus).
+- **Journal des mouvements** : chaque réception, sortie et modification est inscrite par la base (personne, date, heure), sans modification possible ; écran Journal (administrateur) avec filtres et export, traçabilité dans la fiche de chaque lot.
 - **Facturation mensuelle** au prorata des jours, avec TPS/TVQ, facture numérotée et export CSV.
 
 Plusieurs personnes l'utilisent en même temps : les données sont partagées dans Supabase.
@@ -26,6 +27,10 @@ Le jour d'entrée et le jour de sortie sont facturés. Après une sortie partiel
 5. **Project Settings** › *API* : copier *Project URL* et la clé *anon public* dans `config.js`.
 
 Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour saisir le prix au pied carré, les entrepôts et leurs zones.
+
+## Journal des mouvements
+
+Un projet installé avant le 6 novembre 2026 exécute une fois `migrations/2026-11-06-journal.sql` dans **SQL Editor**. Les mouvements déjà enregistrés y sont repris (les anciennes sorties sans leur heure exacte).
 
 ## Comptes des employés depuis l'application
 

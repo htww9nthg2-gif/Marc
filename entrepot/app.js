@@ -1,7 +1,7 @@
 'use strict';
 
 // Affichée dans « Mon compte » : permet de vérifier que chaque appareil a la dernière version
-const VERSION = '10 (gestion des comptes)';
+const VERSION = '11 (journal des mouvements)';
 
 // =====================================================================
 // Petits outils
@@ -16,6 +16,13 @@ const moisCourant = () => aujourdhui().slice(0, 7);
 const dateCourte = iso => iso ? new Date(iso + 'T12:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 const jourMois = iso => new Date(iso + 'T12:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
 const nomMois = mois => new Date(mois + '-15T12:00').toLocaleDateString('fr-CA', { month: 'long', year: 'numeric' });
+function decalerJours(iso, jours) {
+  const d = new Date(iso + 'T12:00');
+  d.setDate(d.getDate() + jours);
+  return d.toISOString().slice(0, 10);
+}
+// Heure de Boucherville, quel que soit le réglage de l'appareil
+const dateHeure = horodatage => new Date(horodatage).toLocaleString('fr-CA', { timeZone: 'America/Toronto', dateStyle: 'medium', timeStyle: 'short' });
 const joursDepuis = iso => Math.max(0, Math.round((Date.parse(aujourdhui()) - Date.parse(iso)) / 86400000));
 
 // Réduit les photos (1600 px, JPEG) avant l'envoi
@@ -47,7 +54,8 @@ let zones = [];
 let clients = [];
 let stock = [];
 let sortis = [];
-let etat = { vue: 'occupation', lotId: null, texte: '', zone: '', voirSortis: false, mois: moisCourant(), clientId: null };
+let etat = { vue: 'occupation', lotId: null, texte: '', zone: '', voirSortis: false, mois: moisCourant(), clientId: null,
+  journal: { du: decalerJours(aujourdhui(), -30), au: aujourdhui(), utilisateur: '', action: '' } };
 let brouillon = nouveauBrouillon();
 let sortie = null;
 let facturationCourante = { mois: null, factures: [], emises: [] };
@@ -314,6 +322,7 @@ function vueStock() {
     <div class="bascule">
       <button class="${etat.voirSortis ? '' : 'actif'}" data-action="voir-sortis" data-valeur="non">En stock (${stock.length})</button>
       <button class="${etat.voirSortis ? 'actif' : ''}" data-action="voir-sortis" data-valeur="oui">Sortis récemment</button>
+      ${estAdmin() ? '<button data-action="aller" data-vue="journal">🕘 Journal</button>' : ''}
     </div>
     <div class="filtres">
       <input type="search" id="recherche" placeholder="Rechercher : client, n° de lot, description…" value="${e(etat.texte)}">
@@ -322,18 +331,81 @@ function vueStock() {
     <div id="liste-lots">${listeLots()}</div>`;
 }
 
+const ACTIONS = { reception: ['📥', 'Réception'], sortie: ['📤', 'Sortie'], sortie_partielle: ['📤', 'Sortie partielle'], modification: ['✏️', 'Modification'] };
+
+function resumeMouvement(m) {
+  const d = m.details || {};
+  if (m.action === 'reception') return `${m.morceaux} morceau(x), ${nombre(m.superficie)} pi² en ${e(m.zone_nom)}${d.date_entree ? ` · entrée déclarée le ${dateCourte(d.date_entree)}` : ''}`;
+  if (m.action === 'modification') {
+    const changements = Object.entries(d).map(([champ, v]) => `${champ} : « ${e(v.avant)} » → « ${e(v.apres)} »`);
+    return changements.join(' · ') || 'Modification';
+  }
+  const reste = d.morceaux_restants ? ` · reste ${d.morceaux_restants} morceau(x) en stock` : '';
+  return `${m.morceaux} morceau(x), ${nombre(m.superficie)} pi² libérés depuis ${e(m.zone_nom)}${d.date_sortie ? ` · sortie déclarée le ${dateCourte(d.date_sortie)}` : ''}${reste}`;
+}
+
+function ligneJournal(m) {
+  const [icone, libelle] = ACTIONS[m.action] || ['•', m.action];
+  const quand = m.details?.heure_inconnue ? `${dateCourte(m.details.date_sortie)} (heure non conservée)` : dateHeure(m.le);
+  const qui = m.utilisateur_nom || m.utilisateur_courriel || 'compte inconnu';
+  return `<li class="mouvement ${m.action}">
+    <span class="mouvement-haut"><strong>${icone} ${libelle} · Lot n° ${m.reference}</strong><span class="discret">${quand}</span></span>
+    <span>${e(m.client_nom)} — ${resumeMouvement(m)}</span>
+    ${m.details?.note ? `<span class="discret">📝 ${e(m.details.note)}</span>` : ''}
+    <span class="discret">par ${e(qui)}${m.details?.repris ? ' · repris de l\'historique' : ''}</span>
+  </li>`;
+}
+
+let journalAffiche = [];
+async function vueJournal() {
+  titre.textContent = 'Journal des mouvements';
+  const f = etat.journal;
+  // Bornes en heure locale : du début du premier jour à la fin du dernier
+  const depuis = new Date(f.du + 'T00:00').toISOString();
+  const jusqua = new Date(decalerJours(f.au, 1) + 'T00:00').toISOString();
+  const [mouvements, profils] = await Promise.all([Donnees.journal({ depuis, jusqua, utilisateur: f.utilisateur, action: f.action }), Donnees.profils()]);
+  journalAffiche = mouvements;
+  const personnes = profils.map(p => `<option value="${p.id}" ${p.id === f.utilisateur ? 'selected' : ''}>${e(p.nom || p.courriel)}</option>`).join('');
+  const types = Object.entries(ACTIONS).map(([cle, [, libelle]]) => `<option value="${cle}" ${cle === f.action ? 'selected' : ''}>${libelle}</option>`).join('');
+  return `
+    <section class="bloc filtres-journal">
+      <label>Du<input type="date" data-journal="du" value="${e(f.du)}"></label>
+      <label>Au<input type="date" data-journal="au" value="${e(f.au)}"></label>
+      <label>Personne<select data-journal="utilisateur"><option value="">Tout le monde</option>${personnes}</select></label>
+      <label>Mouvement<select data-journal="action"><option value="">Tous</option>${types}</select></label>
+    </section>
+    <p class="discret">${mouvements.length} mouvement(s)${mouvements.length === 1000 ? ' (les 1 000 plus récents : resserre la période)' : ''} · le journal est tenu par la base et ne peut pas être modifié.</p>
+    ${mouvements.length ? `<ul class="journal bloc">${mouvements.map(ligneJournal).join('')}</ul>
+      <button class="secondaire" data-action="exporter-journal">📊 Exporter (tableur CSV)</button>` : '<p class="vide">Aucun mouvement sur cette période.</p>'}`;
+}
+
+function exporterJournal() {
+  const cellule = v => {
+    const texte = typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v ?? '');
+    return `"${texte.replace(/"/g, '""')}"`;
+  };
+  const colonnes = ['Date et heure', 'Mouvement', 'Lot', 'Client', 'Zone', 'Morceaux', 'Superficie (pi²)', 'Détail', 'Personne', 'Courriel'];
+  const lignes = journalAffiche.map(m => [
+    m.details?.heure_inconnue ? m.details.date_sortie : dateHeure(m.le), ACTIONS[m.action]?.[1] || m.action, m.reference, m.client_nom, m.zone_nom,
+    m.morceaux ?? '', m.superficie ?? '', resumeMouvement(m).replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' '), m.utilisateur_nom, m.utilisateur_courriel
+  ].map(cellule).join(';'));
+  const contenu = '\ufeff' + [colonnes.map(cellule).join(';'), ...lignes].join('\r\n');
+  const lien = document.createElement('a');
+  lien.href = URL.createObjectURL(new Blob([contenu], { type: 'text/csv;charset=utf-8' }));
+  lien.download = `journal-${etat.journal.du}-au-${etat.journal.au}.csv`;
+  lien.click();
+}
+
 async function vueLot() {
   let lot = stock.find(l => l.id === etat.lotId) || sortis.find(l => l.id === etat.lotId);
-  const historique = lot ? await Donnees.historique(lot.reference) : [];
+  const [historique, mouvements] = lot ? await Promise.all([Donnees.historique(lot.reference), Donnees.journalLot(lot.reference)]) : [[], []];
   lot = historique.find(l => l.id === etat.lotId) || lot;
   if (!lot) return '<p class="vide">Lot introuvable.</p>';
   titre.textContent = `Lot n° ${lot.reference}`;
   if (!sortie || sortie.lot !== lot.id) sortie = { lot: lot.id, date: aujourdhui(), morceaux: lot.morceaux, superficie: lot.superficie, note: '', photos: [] };
 
-  const etapes = historique.length > 1 ? `
-    <section class="bloc"><h2>Historique du lot</h2><ul class="historique">${historique.map(h => `
-      <li class="${h.id === lot.id ? 'courant' : ''}">${h.morceaux} morceau(x), ${nombre(h.superficie)} pi² — du ${dateCourte(h.date_entree)}
-        ${h.date_sortie ? `au ${dateCourte(h.date_sortie)} : <strong>${h.morceaux_sortis} sorti(s)</strong>` : ': <strong>en stock</strong>'}</li>`).join('')}</ul></section>` : '';
+  const etapes = mouvements.length ? `
+    <section class="bloc"><h2>Traçabilité</h2><ul class="journal">${mouvements.map(ligneJournal).join('')}</ul></section>` : '';
 
   const formulaireSortie = lot.date_sortie ? '' : `
     <section class="bloc">
@@ -690,7 +762,7 @@ function valeurs(bloc) {
 // =====================================================================
 const ONGLETS_ADMIN = [['occupation', '📊', 'Occupation'], ['reception', '📥', 'Réception'], ['stock', '📦', 'Stock'], ['facturation', '💲', 'Facturation'], ['reglages', '⚙️', 'Réglages']];
 const ONGLETS_EMPLOYE = [['occupation', '📊', 'Occupation'], ['reception', '📥', 'Réception'], ['stock', '📦', 'Stock'], ['compte', '👤', 'Compte']];
-const PARENT = { lot: 'stock', facture: 'facturation' };
+const PARENT = { lot: 'stock', facture: 'facturation', journal: 'stock' };
 
 function afficherBarre() {
   if (!profil) { barre.hidden = true; return; }
@@ -705,8 +777,8 @@ async function afficher() {
   document.getElementById('retour').hidden = !PARENT[etat.vue];
   if (!Donnees.configure) { app.innerHTML = vueNonConfiguree(); return; }
   if (!profil) { app.innerHTML = vueConnexion(); return; }
-  const vues = { occupation: vueOccupation, reception: vueReception, stock: vueStock, lot: vueLot, facturation: vueFacturation, facture: vueFacture, reglages: vueReglages, compte: vueCompte };
-  const reservee = ['facturation', 'facture', 'reglages'].includes(etat.vue) && !estAdmin();
+  const vues = { journal: vueJournal, occupation: vueOccupation, reception: vueReception, stock: vueStock, lot: vueLot, facturation: vueFacturation, facture: vueFacture, reglages: vueReglages, compte: vueCompte };
+  const reservee = ['facturation', 'facture', 'reglages', 'journal'].includes(etat.vue) && !estAdmin();
   const vue = vues[etat.vue] && !reservee ? vues[etat.vue] : vueOccupation;
   try {
     app.innerHTML = await vue();
@@ -782,6 +854,11 @@ app.addEventListener('change', evenement => {
   }
   if (champ.id === 'filtre-zone') { etat.zone = champ.value; document.getElementById('liste-lots').innerHTML = listeLots(); chargerPhotos(); return; }
   if (champ.id === 'mois' && champ.value) return executer(() => allerA({ mois: champ.value }));
+  if (champ.dataset.journal) {
+    if ((champ.dataset.journal === 'du' || champ.dataset.journal === 'au') && !champ.value) return;
+    etat.journal[champ.dataset.journal] = champ.value;
+    return executer(afficher);
+  }
   if (champ.dataset.champ && champ.hasAttribute('data-rendu')) { brouillon[champ.dataset.champ] = champ.value; afficher(); return; }
   if (champ.dataset.actionChange === 'role') {
     return executer(async () => {
@@ -822,6 +899,7 @@ document.addEventListener('click', evenement => {
     'ouvrir-facture': () => allerA({ vue: 'facture', clientId: id }),
     'emettre-facture': emettreFacture,
     'exporter-csv': exporterCsv,
+    'exporter-journal': exporterJournal,
     imprimer: () => window.print(),
 
     'enregistrer-tarif': async () => {
