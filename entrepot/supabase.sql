@@ -262,3 +262,8 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 grant execute on function public.est_admin() to authenticated;
+
+-- La fonction serveur « comptes » lit et met à jour les profils avec la clé secrète (rôle service_role).
+-- Les projets Supabase récents n'accordent plus ce droit automatiquement.
+grant usage on schema public to service_role;
+grant select, update on public.profils to service_role;

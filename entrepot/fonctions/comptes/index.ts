@@ -39,7 +39,8 @@ Deno.serve(async requete => {
   const { data: lecture, error: erreurJeton } = await admin.auth.getUser(jeton);
   const appelant = lecture?.user;
   if (erreurJeton || !appelant) return reponse({ erreur: 'Connexion requise.' }, 401);
-  const { data: profil } = await admin.from('profils').select('role, actif').eq('id', appelant.id).single();
+  const { data: profil, error: erreurProfil } = await admin.from('profils').select('role, actif').eq('id', appelant.id).single();
+  if (erreurProfil) return reponse({ erreur: `Lecture du profil impossible (${erreurProfil.message}). Exécute migrations/2026-11-05-comptes.sql dans Supabase.` }, 500);
   if (profil?.role !== 'admin' || profil.actif === false) return reponse({ erreur: 'Réservé aux administrateurs.' }, 403);
 
   try {

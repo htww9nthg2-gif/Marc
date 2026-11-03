@@ -9,3 +9,8 @@ create or replace function public.est_admin() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.profils where id = auth.uid() and role = 'admin' and actif);
 $$;
+
+-- La fonction serveur « comptes » lit et met à jour les profils avec la clé secrète (rôle service_role).
+-- Les projets Supabase récents n'accordent plus ce droit automatiquement.
+grant usage on schema public to service_role;
+grant select, update on public.profils to service_role;
