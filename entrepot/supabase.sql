@@ -8,12 +8,13 @@ create table public.profils (
   id uuid primary key references auth.users on delete cascade,
   courriel text,
   nom text not null default '',
-  role text not null default 'employe' check (role in ('admin', 'employe'))
+  role text not null default 'employe' check (role in ('admin', 'employe')),
+  actif boolean not null default true
 );
 
 create function public.est_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profils where id = auth.uid() and role = 'admin');
+  select exists (select 1 from public.profils where id = auth.uid() and role = 'admin' and actif);
 $$;
 
 -- Chaque nouveau compte reçoit un profil d'employé.

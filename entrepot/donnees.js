@@ -29,6 +29,17 @@ const Donnees = (() => {
       return verifier(await sb.from('profils').select('*').eq('id', user.id).single());
     },
     profils: async () => verifier(await sb.from('profils').select('*').order('courriel')),
+    // Fonction serveur « comptes » (fonctions/comptes) : création, mot de passe, désactivation
+    async gererCompte(parametres) {
+      const { data, error } = await sb.functions.invoke('comptes', { body: parametres });
+      if (error) {
+        let detail = null;
+        try { detail = (await error.context.json()).erreur; } catch { /* réponse illisible */ }
+        if (!detail && /not found|404/i.test(error.message + (error.context?.status || ''))) detail = 'La fonction « comptes » n\'est pas installée dans Supabase (voir README).';
+        throw new Error(detail || 'Impossible de joindre la fonction « comptes ». Vérifie qu\'elle est installée dans Supabase.');
+      }
+      return data;
+    },
 
     reglages: async () => verifier(await sb.from('reglages').select('*').eq('id', 1).single()),
     modifierReglages: async champs => verifier(await sb.from('reglages').update(champs).eq('id', 1)),

@@ -1,7 +1,7 @@
 'use strict';
 
 // Affichée dans « Mon compte » : permet de vérifier que chaque appareil a la dernière version
-const VERSION = '9 (plan de l\'entrepôt)';
+const VERSION = '10 (gestion des comptes)';
 
 // =====================================================================
 // Petits outils
@@ -578,13 +578,26 @@ async function vueReglages() {
       </div>
     </details>`).join('');
   const blocsProfils = profils.map(p => `
-    <div class="ligne-profil" data-bloc>
-      <span>${e(p.courriel)}</span>
-      <select name="role" data-action-change="role" data-id="${p.id}" ${p.id === profil.id ? 'disabled' : ''}>
-        <option value="employe" ${p.role === 'employe' ? 'selected' : ''}>Employé</option>
-        <option value="admin" ${p.role === 'admin' ? 'selected' : ''}>Administrateur</option>
-      </select>
-    </div>`).join('');
+    <details class="ligne-profil ${p.actif === false ? 'inactif' : ''}">
+      <summary><span>${e(p.nom || p.courriel)}${p.actif === false ? ' <em>(désactivé)</em>' : ''}</span>
+        <span class="discret">${p.role === 'admin' ? 'Administrateur' : 'Employé'}</span></summary>
+      <p class="discret">${e(p.courriel)}</p>
+      <label>Rôle
+        <select name="role" data-action-change="role" data-id="${p.id}" ${p.id === profil.id ? 'disabled' : ''}>
+          <option value="employe" ${p.role === 'employe' ? 'selected' : ''}>Employé</option>
+          <option value="admin" ${p.role === 'admin' ? 'selected' : ''}>Administrateur</option>
+        </select></label>
+      <div data-bloc>
+        <label>Nouveau mot de passe (8 caractères minimum)<input name="motDePasse" type="text" autocomplete="off"></label>
+        <div class="actions">
+          <button class="lien" data-action="proposer-mot-de-passe">Proposer un mot de passe</button>
+          <button class="secondaire" data-action="changer-mot-de-passe-employe" data-id="${p.id}">Changer</button>
+        </div>
+      </div>
+      ${p.id === profil.id ? '' : p.actif === false
+        ? `<button class="secondaire" data-action="reactiver-compte" data-id="${p.id}">Réactiver le compte</button>`
+        : `<button class="danger" data-action="desactiver-compte" data-id="${p.id}">Désactiver le compte</button>`}
+    </details>`).join('');
 
   return `
     ${!zones.length ? '<p class="info">Bienvenue ! Étape 1 : saisis ton prix au pied carré. Étape 2 : crée tes entrepôts, puis leurs zones avec leur superficie.</p>' : ''}
@@ -629,7 +642,17 @@ async function vueReglages() {
     <section class="bloc">
       <h2>Utilisateurs</h2>
       ${blocsProfils}
-      <p class="discret">Pour ajouter un employé : Supabase › Authentication › Users › « Add user » (courriel + mot de passe, cocher « Auto Confirm »). Il apparaît ici comme employé.</p>
+    </section>
+    <section class="bloc" data-bloc>
+      <h2>Ajouter un employé</h2>
+      <label>Nom<input name="nom" placeholder="Prénom Nom"></label>
+      <label>Courriel<input name="courriel" type="email" autocomplete="off"></label>
+      <label>Mot de passe temporaire (8 caractères minimum)<input name="motDePasse" type="text" autocomplete="off"></label>
+      <div class="actions">
+        <button class="lien" data-action="proposer-mot-de-passe">Proposer un mot de passe</button>
+        <button class="secondaire" data-action="creer-compte">＋ Créer le compte</button>
+      </div>
+      <p class="discret">Transmets le courriel et le mot de passe à l'employé ; il pourra changer son mot de passe dans « Compte ».</p>
     </section>
     ${blocCompte()}`;
 }
@@ -853,6 +876,37 @@ document.addEventListener('click', evenement => {
       await recharger(); afficher();
     },
 
+    'proposer-mot-de-passe': () => {
+      // Lettres et chiffres faciles à lire et à dicter (sans 0/O, 1/l/I)
+      const signes = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const tirage = crypto.getRandomValues(new Uint32Array(10));
+      bloc.querySelector('[name=motDePasse]').value = [...tirage].map(n => signes[n % signes.length]).join('');
+    },
+    'creer-compte': async () => {
+      const v = valeurs(bloc);
+      if (!v.courriel) throw new Error('Indique le courriel de l\'employé.');
+      if (!v.motDePasse || v.motDePasse.length < 8) throw new Error('Le mot de passe doit faire au moins 8 caractères.');
+      await Donnees.gererCompte({ action: 'creer', courriel: v.courriel, nom: v.nom, motDePasse: v.motDePasse });
+      message(`Compte créé pour ${v.courriel}. Transmets-lui son mot de passe.`, 'succes');
+      afficher();
+    },
+    'changer-mot-de-passe-employe': async () => {
+      const { motDePasse } = valeurs(bloc);
+      if (!motDePasse || motDePasse.length < 8) throw new Error('Le mot de passe doit faire au moins 8 caractères.');
+      await Donnees.gererCompte({ action: 'mot-de-passe', id, motDePasse });
+      message('Mot de passe changé. Transmets-le à l\'employé.', 'succes');
+    },
+    'desactiver-compte': async () => {
+      if (!confirm('Désactiver ce compte ? La personne ne pourra plus se connecter. Son historique est conservé.')) return;
+      await Donnees.gererCompte({ action: 'desactiver', id });
+      message('Compte désactivé.', 'succes');
+      afficher();
+    },
+    'reactiver-compte': async () => {
+      await Donnees.gererCompte({ action: 'reactiver', id });
+      message('Compte réactivé.', 'succes');
+      afficher();
+    },
     'changer-mot-de-passe': async () => {
       const { motDePasse } = valeurs(bloc);
       if (!motDePasse || motDePasse.length < 8) throw new Error('Le mot de passe doit faire au moins 8 caractères.');

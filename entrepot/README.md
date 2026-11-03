@@ -27,6 +27,16 @@ Le jour d'entrée et le jour de sortie sont facturés. Après une sortie partiel
 
 Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour saisir le prix au pied carré, les entrepôts et leurs zones.
 
+## Comptes des employés depuis l'application
+
+L'administrateur crée les comptes, change les mots de passe et désactive les comptes dans **Réglages › Utilisateurs**.
+Cela passe par la fonction serveur `fonctions/comptes/index.ts`, installée une fois dans Supabase :
+
+1. **SQL Editor** : exécuter `migrations/2026-11-05-comptes.sql`.
+2. **Edge Functions** › *Deploy a new function* › *Via Editor* : nommer la fonction `comptes`, coller le contenu de `fonctions/comptes/index.ts`, puis *Deploy*.
+3. Dans les réglages de la fonction : désactiver *Verify JWT* (la fonction vérifie elle-même que l'appel vient d'un administrateur connecté).
+4. Si l'application affiche « Clé secrète introuvable » : **Edge Functions › Secrets**, ajouter `CLE_SECRETE` avec la clé secrète du projet (*Project Settings › API Keys*, clé `sb_secret_…`). Cette clé ne doit jamais être copiée ailleurs.
+
 ## Fichiers
 
 | Fichier | Rôle |
@@ -37,6 +47,7 @@ Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour s
 | `calculs.js` | Calculs d'occupation et de facturation |
 | `plan.js` | Plan de l'entrepôt (zones reliées par leur nom : « Zone 1 » à « Zone 7 ») |
 | `donnees.js` | Échanges avec Supabase |
+| `fonctions/comptes/` | Fonction serveur de gestion des comptes (clé secrète côté serveur uniquement) |
 | `app.js` | Écrans |
 | `vendor/supabase.js` | Bibliothèque Supabase (supabase-js 2.117.3, licence MIT) |
 
