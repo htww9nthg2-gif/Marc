@@ -37,7 +37,7 @@ Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour s
 | `calculs.js` | Calculs d'occupation et de facturation |
 | `donnees.js` | Échanges avec Supabase |
 | `app.js` | Écrans |
-| `vendor/supabase.js` | Bibliothèque Supabase (supabase-js 2.45.4, licence MIT) |
+| `vendor/supabase.js` | Bibliothèque Supabase (supabase-js 2.117.3, licence MIT) |
 
 ## Mises à jour de sécurité
 
