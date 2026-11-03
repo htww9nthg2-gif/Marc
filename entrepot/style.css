@@ -276,5 +276,28 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--orange); bo
   .galerie { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
 @media (min-width: 1000px) {
-  .grille-entrepots { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; }
+  .grille-entrepots { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 0 16px; align-items: start; }
 }
+
+/* Plan de l'entrepôt */
+.plan { margin: 12px 0 16px; }
+.plan svg { display: block; width: 100%; max-height: 70vh; }
+.plan-batiment { fill: #eef1f5; stroke: var(--texte); stroke-width: .6; }
+.plan-zone rect { stroke-width: .5; }
+.plan-zone.libre rect { fill: #d4efdf; stroke: var(--vert); }
+.plan-zone.pleine rect { fill: #f6d5d1; stroke: var(--rouge); }
+.plan-zone.absente rect { fill: #f3f5f8; stroke: #b8c2cf; stroke-dasharray: 1.5 1; }
+.plan-zone[data-action] { cursor: pointer; }
+.plan-zone text { text-anchor: middle; dominant-baseline: middle; fill: var(--texte); pointer-events: none; }
+.plan-nom { font-size: 3px; font-weight: 700; }
+.plan-taux { font-size: 3.6px; font-weight: 800; }
+.plan-zone.libre .plan-taux { fill: var(--vert); }
+.plan-zone.pleine .plan-taux { fill: var(--rouge); }
+.plan-detail { font-size: 2.2px; fill: var(--discret); }
+.plan-zone.absente text { fill: #94a3b8; }
+.plan-porte { stroke: var(--orange); stroke-width: 1.4; }
+.plan-legende-porte { font-size: 2.2px; text-anchor: middle; fill: var(--discret); }
+.plan figcaption { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; font-size: 13px; color: var(--discret); margin-top: 6px; }
+.pastille { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.pastille.libre { background: #d4efdf; border: 1px solid var(--vert); }
+.pastille.pleine { background: #f6d5d1; border: 1px solid var(--rouge); }

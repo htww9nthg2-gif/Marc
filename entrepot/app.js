@@ -144,6 +144,12 @@ function vueConnexion() {
 const classeTaux = t => t >= 0.9 ? 'plein' : t >= 0.7 ? 'attention' : 'ok';
 const barreTaux = t => `<div class="jauge"><div class="${classeTaux(t)}" style="width:${Math.min(100, t * 100)}%"></div></div>`;
 
+// Plan de l'entrepôt (plan.js), si ses zones correspondent à un plan connu
+function planEntrepot(r) {
+  const plan = Plan.pourEntrepot(r.zones.map(z => z.zone));
+  return plan ? Plan.dessiner(plan, r.zones, { e, nombre }) : '';
+}
+
 function vueOccupation() {
   titre.textContent = 'Occupation';
   if (!zones.length) {
@@ -159,6 +165,7 @@ function vueOccupation() {
       <div class="titre-bloc"><h2>${e(r.entrepot.nom)}</h2><strong class="taux ${classeTaux(r.taux)}">${pourcent(r.taux)}</strong></div>
       ${barreTaux(r.taux)}
       <p class="discret">${nombre(r.occupe)} pi² occupés sur ${nombre(r.superficie)} pi² · ${nombre(r.superficie - r.occupe)} pi² libres</p>
+      ${planEntrepot(r)}
       <ul class="zones">${r.zones.map(z => `
         <li><button data-action="voir-zone" data-id="${z.zone.id}">
           <span class="zone-haut"><strong>${e(z.zone.nom)}</strong><span>${pourcent(z.taux)}</span></span>

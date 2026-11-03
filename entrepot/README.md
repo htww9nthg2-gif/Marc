@@ -4,7 +4,7 @@ Application web (iPhone et ordinateur) pour gérer un entrepôt facturé au pied
 
 - **Réception** : photos du lot, nombre de morceaux, superficie (pi²) et zone de rangement.
 - **Sortie** complète ou partielle (le reste garde le même numéro de lot).
-- **Occupation** de chaque zone et de chaque entrepôt, en temps réel.
+- **Occupation** de chaque zone et de chaque entrepôt, en temps réel, avec le plan de l'entrepôt : zones en vert (place disponible) ou en rouge (pleines à 90 % et plus).
 - **Facturation mensuelle** au prorata des jours, avec TPS/TVQ, facture numérotée et export CSV.
 
 Plusieurs personnes l'utilisent en même temps : les données sont partagées dans Supabase.
@@ -35,6 +35,7 @@ Ensuite, l'administrateur se connecte : l'application ouvre les réglages pour s
 | `migrations/` | Mises à jour à exécuter sur un projet déjà installé (voir ci-dessous) |
 | `config.js` | Adresse et clé publique du projet Supabase |
 | `calculs.js` | Calculs d'occupation et de facturation |
+| `plan.js` | Plan de l'entrepôt (zones reliées par leur nom : « Zone 1 » à « Zone 7 ») |
 | `donnees.js` | Échanges avec Supabase |
 | `app.js` | Écrans |
 | `vendor/supabase.js` | Bibliothèque Supabase (supabase-js 2.117.3, licence MIT) |

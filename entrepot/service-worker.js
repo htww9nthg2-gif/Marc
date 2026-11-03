@@ -1,7 +1,7 @@
 // Garde les fichiers de l'application en cache pour qu'elle s'ouvre vite.
 // Les données, elles, viennent toujours du serveur (Supabase).
 // Changer ce numéro à chaque nouvelle version force la mise à jour du cache.
-const CACHE = 'entreposage-v4';
+const CACHE = 'entreposage-v5';
 
 const FICHIERS = [
   './',
@@ -9,6 +9,7 @@ const FICHIERS = [
   'style.css',
   'config.js',
   'calculs.js',
+  'plan.js',
   'donnees.js',
   'app.js',
   'vendor/supabase.js',
